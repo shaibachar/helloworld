@@ -25,6 +25,5 @@ relationship OneToMany {
 paginate Client with pagination
 paginate PhoneBook with pagination
 
-search * with elasticsearch
 dto * with mapstruct
 
