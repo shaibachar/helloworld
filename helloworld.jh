@@ -1,0 +1,30 @@
+
+entity PhoneBook {
+	firstName String,
+    lastName String,
+    phone String
+}
+
+entity Client {
+	name String required,
+    address String,
+    email String,
+    gender Gender
+}
+
+enum Gender {
+ 	MALE, FEMALE
+}
+
+relationship OneToMany {
+	Client{phoneBook} to PhoneBook{client(name)}
+}
+
+
+// Set pagination options
+paginate Client with pagination
+paginate PhoneBook with pagination
+
+search * with elasticsearch
+dto * with mapstruct
+
