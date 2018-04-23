@@ -12,7 +12,6 @@ export type EntityResponseType = HttpResponse<Client>;
 export class ClientService {
 
     private resourceUrl =  SERVER_API_URL + 'api/clients';
-    private resourceSearchUrl = SERVER_API_URL + 'api/_search/clients';
 
     constructor(private http: HttpClient) { }
 
@@ -41,12 +40,6 @@ export class ClientService {
 
     delete(id: number): Observable<HttpResponse<any>> {
         return this.http.delete<any>(`${this.resourceUrl}/${id}`, { observe: 'response'});
-    }
-
-    search(req?: any): Observable<HttpResponse<Client[]>> {
-        const options = createRequestOption(req);
-        return this.http.get<Client[]>(this.resourceSearchUrl, { params: options, observe: 'response' })
-            .map((res: HttpResponse<Client[]>) => this.convertArrayResponse(res));
     }
 
     private convertResponse(res: EntityResponseType): EntityResponseType {

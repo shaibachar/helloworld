@@ -35,6 +35,5 @@
     "dto": "mapstruct",
     "pagination": "pagination",
     "service": "no",
-    "jpaMetamodelFiltering": false,
-    "searchEngine": "elasticsearch"
+    "jpaMetamodelFiltering": false
 }

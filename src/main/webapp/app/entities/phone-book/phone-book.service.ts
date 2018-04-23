@@ -12,7 +12,6 @@ export type EntityResponseType = HttpResponse<PhoneBook>;
 export class PhoneBookService {
 
     private resourceUrl =  SERVER_API_URL + 'api/phone-books';
-    private resourceSearchUrl = SERVER_API_URL + 'api/_search/phone-books';
 
     constructor(private http: HttpClient) { }
 
@@ -41,12 +40,6 @@ export class PhoneBookService {
 
     delete(id: number): Observable<HttpResponse<any>> {
         return this.http.delete<any>(`${this.resourceUrl}/${id}`, { observe: 'response'});
-    }
-
-    search(req?: any): Observable<HttpResponse<PhoneBook[]>> {
-        const options = createRequestOption(req);
-        return this.http.get<PhoneBook[]>(this.resourceSearchUrl, { params: options, observe: 'response' })
-            .map((res: HttpResponse<PhoneBook[]>) => this.convertArrayResponse(res));
     }
 
     private convertResponse(res: EntityResponseType): EntityResponseType {
