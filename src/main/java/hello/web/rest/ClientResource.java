@@ -4,7 +4,6 @@ import com.codahale.metrics.annotation.Timed;
 import hello.domain.Client;
 
 import hello.repository.ClientRepository;
-import hello.repository.search.ClientSearchRepository;
 import hello.web.rest.errors.BadRequestAlertException;
 import hello.web.rest.util.HeaderUtil;
 import hello.web.rest.util.PaginationUtil;
@@ -26,10 +25,6 @@ import java.net.URISyntaxException;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
-import static org.elasticsearch.index.query.QueryBuilders.*;
 
 /**
  * REST controller for managing Client.
@@ -46,12 +41,9 @@ public class ClientResource {
 
     private final ClientMapper clientMapper;
 
-    private final ClientSearchRepository clientSearchRepository;
-
-    public ClientResource(ClientRepository clientRepository, ClientMapper clientMapper, ClientSearchRepository clientSearchRepository) {
+    public ClientResource(ClientRepository clientRepository, ClientMapper clientMapper) {
         this.clientRepository = clientRepository;
         this.clientMapper = clientMapper;
-        this.clientSearchRepository = clientSearchRepository;
     }
 
     /**
@@ -71,7 +63,6 @@ public class ClientResource {
         Client client = clientMapper.toEntity(clientDTO);
         client = clientRepository.save(client);
         ClientDTO result = clientMapper.toDto(client);
-        clientSearchRepository.save(client);
         return ResponseEntity.created(new URI("/api/clients/" + result.getId()))
             .headers(HeaderUtil.createEntityCreationAlert(ENTITY_NAME, result.getId().toString()))
             .body(result);
@@ -96,7 +87,6 @@ public class ClientResource {
         Client client = clientMapper.toEntity(clientDTO);
         client = clientRepository.save(client);
         ClientDTO result = clientMapper.toDto(client);
-        clientSearchRepository.save(client);
         return ResponseEntity.ok()
             .headers(HeaderUtil.createEntityUpdateAlert(ENTITY_NAME, clientDTO.getId().toString()))
             .body(result);
@@ -143,25 +133,6 @@ public class ClientResource {
     public ResponseEntity<Void> deleteClient(@PathVariable Long id) {
         log.debug("REST request to delete Client : {}", id);
         clientRepository.delete(id);
-        clientSearchRepository.delete(id);
         return ResponseEntity.ok().headers(HeaderUtil.createEntityDeletionAlert(ENTITY_NAME, id.toString())).build();
     }
-
-    /**
-     * SEARCH  /_search/clients?query=:query : search for the client corresponding
-     * to the query.
-     *
-     * @param query the query of the client search
-     * @param pageable the pagination information
-     * @return the result of the search
-     */
-    @GetMapping("/_search/clients")
-    @Timed
-    public ResponseEntity<List<ClientDTO>> searchClients(@RequestParam String query, Pageable pageable) {
-        log.debug("REST request to search for a page of Clients for query {}", query);
-        Page<Client> page = clientSearchRepository.search(queryStringQuery(query), pageable);
-        HttpHeaders headers = PaginationUtil.generateSearchPaginationHttpHeaders(query, page, "/api/_search/clients");
-        return new ResponseEntity<>(clientMapper.toDto(page.getContent()), headers, HttpStatus.OK);
-    }
-
 }

@@ -4,7 +4,6 @@ import com.codahale.metrics.annotation.Timed;
 import hello.domain.PhoneBook;
 
 import hello.repository.PhoneBookRepository;
-import hello.repository.search.PhoneBookSearchRepository;
 import hello.web.rest.errors.BadRequestAlertException;
 import hello.web.rest.util.HeaderUtil;
 import hello.web.rest.util.PaginationUtil;
@@ -25,10 +24,6 @@ import java.net.URISyntaxException;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
-import static org.elasticsearch.index.query.QueryBuilders.*;
 
 /**
  * REST controller for managing PhoneBook.
@@ -45,12 +40,9 @@ public class PhoneBookResource {
 
     private final PhoneBookMapper phoneBookMapper;
 
-    private final PhoneBookSearchRepository phoneBookSearchRepository;
-
-    public PhoneBookResource(PhoneBookRepository phoneBookRepository, PhoneBookMapper phoneBookMapper, PhoneBookSearchRepository phoneBookSearchRepository) {
+    public PhoneBookResource(PhoneBookRepository phoneBookRepository, PhoneBookMapper phoneBookMapper) {
         this.phoneBookRepository = phoneBookRepository;
         this.phoneBookMapper = phoneBookMapper;
-        this.phoneBookSearchRepository = phoneBookSearchRepository;
     }
 
     /**
@@ -70,7 +62,6 @@ public class PhoneBookResource {
         PhoneBook phoneBook = phoneBookMapper.toEntity(phoneBookDTO);
         phoneBook = phoneBookRepository.save(phoneBook);
         PhoneBookDTO result = phoneBookMapper.toDto(phoneBook);
-        phoneBookSearchRepository.save(phoneBook);
         return ResponseEntity.created(new URI("/api/phone-books/" + result.getId()))
             .headers(HeaderUtil.createEntityCreationAlert(ENTITY_NAME, result.getId().toString()))
             .body(result);
@@ -95,7 +86,6 @@ public class PhoneBookResource {
         PhoneBook phoneBook = phoneBookMapper.toEntity(phoneBookDTO);
         phoneBook = phoneBookRepository.save(phoneBook);
         PhoneBookDTO result = phoneBookMapper.toDto(phoneBook);
-        phoneBookSearchRepository.save(phoneBook);
         return ResponseEntity.ok()
             .headers(HeaderUtil.createEntityUpdateAlert(ENTITY_NAME, phoneBookDTO.getId().toString()))
             .body(result);
@@ -142,25 +132,6 @@ public class PhoneBookResource {
     public ResponseEntity<Void> deletePhoneBook(@PathVariable Long id) {
         log.debug("REST request to delete PhoneBook : {}", id);
         phoneBookRepository.delete(id);
-        phoneBookSearchRepository.delete(id);
         return ResponseEntity.ok().headers(HeaderUtil.createEntityDeletionAlert(ENTITY_NAME, id.toString())).build();
     }
-
-    /**
-     * SEARCH  /_search/phone-books?query=:query : search for the phoneBook corresponding
-     * to the query.
-     *
-     * @param query the query of the phoneBook search
-     * @param pageable the pagination information
-     * @return the result of the search
-     */
-    @GetMapping("/_search/phone-books")
-    @Timed
-    public ResponseEntity<List<PhoneBookDTO>> searchPhoneBooks(@RequestParam String query, Pageable pageable) {
-        log.debug("REST request to search for a page of PhoneBooks for query {}", query);
-        Page<PhoneBook> page = phoneBookSearchRepository.search(queryStringQuery(query), pageable);
-        HttpHeaders headers = PaginationUtil.generateSearchPaginationHttpHeaders(query, page, "/api/_search/phone-books");
-        return new ResponseEntity<>(phoneBookMapper.toDto(page.getContent()), headers, HttpStatus.OK);
-    }
-
 }

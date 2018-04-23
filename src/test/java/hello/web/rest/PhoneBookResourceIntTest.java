@@ -4,7 +4,6 @@ import hello.HelloworldApp;
 
 import hello.domain.PhoneBook;
 import hello.repository.PhoneBookRepository;
-import hello.repository.search.PhoneBookSearchRepository;
 import hello.service.dto.PhoneBookDTO;
 import hello.service.mapper.PhoneBookMapper;
 import hello.web.rest.errors.ExceptionTranslator;
@@ -57,9 +56,6 @@ public class PhoneBookResourceIntTest {
     private PhoneBookMapper phoneBookMapper;
 
     @Autowired
-    private PhoneBookSearchRepository phoneBookSearchRepository;
-
-    @Autowired
     private MappingJackson2HttpMessageConverter jacksonMessageConverter;
 
     @Autowired
@@ -78,7 +74,7 @@ public class PhoneBookResourceIntTest {
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
-        final PhoneBookResource phoneBookResource = new PhoneBookResource(phoneBookRepository, phoneBookMapper, phoneBookSearchRepository);
+        final PhoneBookResource phoneBookResource = new PhoneBookResource(phoneBookRepository, phoneBookMapper);
         this.restPhoneBookMockMvc = MockMvcBuilders.standaloneSetup(phoneBookResource)
             .setCustomArgumentResolvers(pageableArgumentResolver)
             .setControllerAdvice(exceptionTranslator)
@@ -102,7 +98,6 @@ public class PhoneBookResourceIntTest {
 
     @Before
     public void initTest() {
-        phoneBookSearchRepository.deleteAll();
         phoneBook = createEntity(em);
     }
 
@@ -125,10 +120,6 @@ public class PhoneBookResourceIntTest {
         assertThat(testPhoneBook.getFirstName()).isEqualTo(DEFAULT_FIRST_NAME);
         assertThat(testPhoneBook.getLastName()).isEqualTo(DEFAULT_LAST_NAME);
         assertThat(testPhoneBook.getPhone()).isEqualTo(DEFAULT_PHONE);
-
-        // Validate the PhoneBook in Elasticsearch
-        PhoneBook phoneBookEs = phoneBookSearchRepository.findOne(testPhoneBook.getId());
-        assertThat(phoneBookEs).isEqualToIgnoringGivenFields(testPhoneBook);
     }
 
     @Test
@@ -196,7 +187,6 @@ public class PhoneBookResourceIntTest {
     public void updatePhoneBook() throws Exception {
         // Initialize the database
         phoneBookRepository.saveAndFlush(phoneBook);
-        phoneBookSearchRepository.save(phoneBook);
         int databaseSizeBeforeUpdate = phoneBookRepository.findAll().size();
 
         // Update the phoneBook
@@ -221,10 +211,6 @@ public class PhoneBookResourceIntTest {
         assertThat(testPhoneBook.getFirstName()).isEqualTo(UPDATED_FIRST_NAME);
         assertThat(testPhoneBook.getLastName()).isEqualTo(UPDATED_LAST_NAME);
         assertThat(testPhoneBook.getPhone()).isEqualTo(UPDATED_PHONE);
-
-        // Validate the PhoneBook in Elasticsearch
-        PhoneBook phoneBookEs = phoneBookSearchRepository.findOne(testPhoneBook.getId());
-        assertThat(phoneBookEs).isEqualToIgnoringGivenFields(testPhoneBook);
     }
 
     @Test
@@ -251,7 +237,6 @@ public class PhoneBookResourceIntTest {
     public void deletePhoneBook() throws Exception {
         // Initialize the database
         phoneBookRepository.saveAndFlush(phoneBook);
-        phoneBookSearchRepository.save(phoneBook);
         int databaseSizeBeforeDelete = phoneBookRepository.findAll().size();
 
         // Get the phoneBook
@@ -259,30 +244,9 @@ public class PhoneBookResourceIntTest {
             .accept(TestUtil.APPLICATION_JSON_UTF8))
             .andExpect(status().isOk());
 
-        // Validate Elasticsearch is empty
-        boolean phoneBookExistsInEs = phoneBookSearchRepository.exists(phoneBook.getId());
-        assertThat(phoneBookExistsInEs).isFalse();
-
         // Validate the database is empty
         List<PhoneBook> phoneBookList = phoneBookRepository.findAll();
         assertThat(phoneBookList).hasSize(databaseSizeBeforeDelete - 1);
-    }
-
-    @Test
-    @Transactional
-    public void searchPhoneBook() throws Exception {
-        // Initialize the database
-        phoneBookRepository.saveAndFlush(phoneBook);
-        phoneBookSearchRepository.save(phoneBook);
-
-        // Search the phoneBook
-        restPhoneBookMockMvc.perform(get("/api/_search/phone-books?query=id:" + phoneBook.getId()))
-            .andExpect(status().isOk())
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
-            .andExpect(jsonPath("$.[*].id").value(hasItem(phoneBook.getId().intValue())))
-            .andExpect(jsonPath("$.[*].firstName").value(hasItem(DEFAULT_FIRST_NAME.toString())))
-            .andExpect(jsonPath("$.[*].lastName").value(hasItem(DEFAULT_LAST_NAME.toString())))
-            .andExpect(jsonPath("$.[*].phone").value(hasItem(DEFAULT_PHONE.toString())));
     }
 
     @Test

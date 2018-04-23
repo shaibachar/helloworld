@@ -4,7 +4,6 @@ import hello.HelloworldApp;
 
 import hello.domain.Client;
 import hello.repository.ClientRepository;
-import hello.repository.search.ClientSearchRepository;
 import hello.service.dto.ClientDTO;
 import hello.service.mapper.ClientMapper;
 import hello.web.rest.errors.ExceptionTranslator;
@@ -61,9 +60,6 @@ public class ClientResourceIntTest {
     private ClientMapper clientMapper;
 
     @Autowired
-    private ClientSearchRepository clientSearchRepository;
-
-    @Autowired
     private MappingJackson2HttpMessageConverter jacksonMessageConverter;
 
     @Autowired
@@ -82,7 +78,7 @@ public class ClientResourceIntTest {
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
-        final ClientResource clientResource = new ClientResource(clientRepository, clientMapper, clientSearchRepository);
+        final ClientResource clientResource = new ClientResource(clientRepository, clientMapper);
         this.restClientMockMvc = MockMvcBuilders.standaloneSetup(clientResource)
             .setCustomArgumentResolvers(pageableArgumentResolver)
             .setControllerAdvice(exceptionTranslator)
@@ -107,7 +103,6 @@ public class ClientResourceIntTest {
 
     @Before
     public void initTest() {
-        clientSearchRepository.deleteAll();
         client = createEntity(em);
     }
 
@@ -131,10 +126,6 @@ public class ClientResourceIntTest {
         assertThat(testClient.getAddress()).isEqualTo(DEFAULT_ADDRESS);
         assertThat(testClient.getEmail()).isEqualTo(DEFAULT_EMAIL);
         assertThat(testClient.getGender()).isEqualTo(DEFAULT_GENDER);
-
-        // Validate the Client in Elasticsearch
-        Client clientEs = clientSearchRepository.findOne(testClient.getId());
-        assertThat(clientEs).isEqualToIgnoringGivenFields(testClient);
     }
 
     @Test
@@ -223,7 +214,6 @@ public class ClientResourceIntTest {
     public void updateClient() throws Exception {
         // Initialize the database
         clientRepository.saveAndFlush(client);
-        clientSearchRepository.save(client);
         int databaseSizeBeforeUpdate = clientRepository.findAll().size();
 
         // Update the client
@@ -250,10 +240,6 @@ public class ClientResourceIntTest {
         assertThat(testClient.getAddress()).isEqualTo(UPDATED_ADDRESS);
         assertThat(testClient.getEmail()).isEqualTo(UPDATED_EMAIL);
         assertThat(testClient.getGender()).isEqualTo(UPDATED_GENDER);
-
-        // Validate the Client in Elasticsearch
-        Client clientEs = clientSearchRepository.findOne(testClient.getId());
-        assertThat(clientEs).isEqualToIgnoringGivenFields(testClient);
     }
 
     @Test
@@ -280,7 +266,6 @@ public class ClientResourceIntTest {
     public void deleteClient() throws Exception {
         // Initialize the database
         clientRepository.saveAndFlush(client);
-        clientSearchRepository.save(client);
         int databaseSizeBeforeDelete = clientRepository.findAll().size();
 
         // Get the client
@@ -288,31 +273,9 @@ public class ClientResourceIntTest {
             .accept(TestUtil.APPLICATION_JSON_UTF8))
             .andExpect(status().isOk());
 
-        // Validate Elasticsearch is empty
-        boolean clientExistsInEs = clientSearchRepository.exists(client.getId());
-        assertThat(clientExistsInEs).isFalse();
-
         // Validate the database is empty
         List<Client> clientList = clientRepository.findAll();
         assertThat(clientList).hasSize(databaseSizeBeforeDelete - 1);
-    }
-
-    @Test
-    @Transactional
-    public void searchClient() throws Exception {
-        // Initialize the database
-        clientRepository.saveAndFlush(client);
-        clientSearchRepository.save(client);
-
-        // Search the client
-        restClientMockMvc.perform(get("/api/_search/clients?query=id:" + client.getId()))
-            .andExpect(status().isOk())
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
-            .andExpect(jsonPath("$.[*].id").value(hasItem(client.getId().intValue())))
-            .andExpect(jsonPath("$.[*].name").value(hasItem(DEFAULT_NAME.toString())))
-            .andExpect(jsonPath("$.[*].address").value(hasItem(DEFAULT_ADDRESS.toString())))
-            .andExpect(jsonPath("$.[*].email").value(hasItem(DEFAULT_EMAIL.toString())))
-            .andExpect(jsonPath("$.[*].gender").value(hasItem(DEFAULT_GENDER.toString())));
     }
 
     @Test
