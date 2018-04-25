@@ -7,6 +7,7 @@ import io.github.jhipster.config.JHipsterConstants;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.actuate.autoconfigure.*;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -14,6 +15,8 @@ import org.springframework.boot.autoconfigure.liquibase.LiquibaseProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.env.Environment;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import javax.annotation.PostConstruct;
 import java.net.InetAddress;
@@ -24,6 +27,9 @@ import java.util.Collection;
 @ComponentScan
 @EnableAutoConfiguration(exclude = {MetricFilterAutoConfiguration.class, MetricRepositoryAutoConfiguration.class})
 @EnableConfigurationProperties({LiquibaseProperties.class, ApplicationProperties.class})
+@EnableBatchProcessing
+@EnableAsync
+@EnableScheduling
 public class HelloworldApp {
 
     private static final Logger log = LoggerFactory.getLogger(HelloworldApp.class);

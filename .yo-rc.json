@@ -31,6 +31,14 @@
     "jhipsterVersion": "4.14.3",
     "packageFolder": "hello",
     "jwtSecretKey": "40d51cec4cbd6dd6f1286f2d178eeb4e9db1dab5",
-    "jhiPrefix": "jhi"
+    "jhiPrefix": "jhi",
+    "appsFolders": [
+      "helloworld"
+    ],
+    "directoryPath": "../",
+    "dockerRepositoryName": "shaibachar",
+    "dockerPushCommand": "docker push",
+    "kubernetesNamespace": "shai",
+    "kubernetesServiceType": "LoadBalancer"
   }
 }
